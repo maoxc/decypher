@@ -21,6 +21,16 @@ char toUpper(const char &c) { return c - 'a' + 'A';}
 
 
 /*
+    Adds a suffix to a filename
+*/
+string add_filename_suffix(const string & fname, string && suffix) {
+    size_t dot_index = fname.find('.');
+    if (dot_index == string::npos) return fname + suffix;
+    return fname.substr(0, dot_index) + suffix +
+        fname.substr(dot_index, fname.size() - dot_index);
+}
+
+/*
     Returns all n(n-1)/2 possible transpositions of a string
 */ 
 vector<string> transpositions(string s) {
@@ -69,9 +79,9 @@ string pattern(const string & word) {
     Writes into a file with name given by second argument
     Returns false if some file operation failed
 */
-bool patternify(const string& in, const string& out) {
+bool patternify(const string& in) {
     ifstream fin(in);
-    ofstream fout(out);
+    ofstream fout(add_filename_suffix(in, "-patterns"));
     if (!fin || !fout) return false;
     map<string, vector<string>>  patterns;
     for (string line; getline(fin, line);
@@ -211,10 +221,8 @@ bool random_encrypt(const string & in) {
 */
 bool decrypt(const string & in, const string & key) {
     ifstream fin(in);
-    size_t dot_index = in.find('.');
-    string out = in.substr(0, dot_index) + "-decrypted" +
-    in.substr(dot_index, in.size() - dot_index);
-    ofstream fout(out);
+
+    ofstream fout(add_filename_suffix(in, "-decrypted"));
     if (!fin) {
         cerr << "ERROR file " + in + " not found" << endl;
         return false;
@@ -300,6 +308,10 @@ int main(int argc, char ** argv) {
         string sol = solve(table, ngrams);
         decrypt(in, sol);
     }
-
+    else {
+        cout << "No input specified" << endl;
+        cout << "decypher [-t [table]] [-d [dictionary]] file..." << endl;
+    }
+    
     return 0;
 }
