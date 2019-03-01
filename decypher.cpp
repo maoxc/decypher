@@ -79,7 +79,7 @@ std::string pattern(const std::string & word) {
 
     --dict.txt--
     | cat      |      1.2.3:cat,dog;
-    | dog      |  ->  1.2.1.1.3:mommy,puppy;
+    | dog      |  ->  1.2.1.1.3:mummy,puppy;
     | mummy    |      ...
     | puppy    |
     | ...      |
