@@ -22,11 +22,11 @@ A hill-climbing algorithm is used to improve the fitness exhaustively: in each s
 ## Usage:
 `1)`  
 Use random keys to encrypt file(s):  
-`decypher --encrypt file ...`  
+`decypher -e|--encrypt file ...`  
 &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;outputted file(s) are prefixed by `_`  
 
 `2)`  
 Decrypt file(s) using optional tally/dictionary files and silent flag:  
-`decypher [-t tally] [-d dictionary] [--silent] file ...`  
+`decypher [-t tally] [-d dictionary] [-s|--silent] file ...`  
 &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;outputted file(s) are suffixed by `-decrypted`  
 &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;files `default-tally.txt` and `default-dictionary.txt` are used implicitly unless otherwise specified.  
