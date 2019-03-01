@@ -23,10 +23,10 @@ A hill-climbing algorithm is used to improve the fitness exhaustively: in each s
 `1)`  
 Use random keys to encrypt file(s):  
 `decypher --encrypt file ...`  
-outputted file(s) are prefixed by `_`  
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;outputted file(s) are prefixed by `_`  
 
 `2)`  
 Decrypt file(s) using optional tally/dictionary files and silent flag:  
 `decypher [-t tally] [-d dictionary] [--silent] file ...`  
-outputted file(s) are suffixed by `-decrypted`  
-files `default-tally.txt` and `default-dictionary.txt` are used implicitly unless otherwise specified.  
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;outputted file(s) are suffixed by `-decrypted`  
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;files `default-tally.txt` and `default-dictionary.txt` are used implicitly unless otherwise specified.  
