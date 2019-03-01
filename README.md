@@ -7,7 +7,7 @@ In cryptography, a substitution cipher is a method of encrypting by which units 
 Two identical characters in a ciphertext will represent the same character in the plaintext. Enter word patterns:  
 `pattern("hello") = "1.2.3.3.4"`  
 
-A dictionary of plaintext words is compiled into lists of words by their pattern.  
+A dictionary of plaintext words is mapped into lists of words by their pattern.  
 `"1.2.1.1.3": {"mummy", "puppy"}`  
 
 Given a cipherword whose pattern corresponds to only one word in the dictionary, we solve a part of the cipher.  
