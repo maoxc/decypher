@@ -1,11 +1,12 @@
 #include <iostream>
 #include <fstream>
 #include <sstream>
-#include <map>
+#include <unordered_map>
 #include <vector>
 #include <queue>
 #include <random>
 #include <chrono>
+#include <getopt.h>
 using vs = std::vector<std::string>;
 
 constexpr auto eng = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -38,28 +39,13 @@ std::string add_filename_suffix(const std::string & fname, std::string && suffix
         fname.substr(dot_index, fname.size() - dot_index);
 }
 
-/*
-    Return all n(n-1)/2 possible transpositions of a string
-*/ 
-vs transpositions(std::string s) {
-    vs vec;
-    for (size_t i = 0; i < s.size(); i++) {
-        for (size_t j = i + 1; j < s.size(); j++) {
-            std::swap(s[i], s[j]);
-            vec.push_back(s);
-            std::swap(s[i], s[j]);
-        }
-    }
-    return vec;
-}
-
 /* 
     Create the pattern of a word e.g.:
     pattern("hello") = "1.2.3.3.4"
 */
 std::string pattern(const std::string & word) {
     if (word.size() == 0) return "";
-    std::map<char, size_t> m;
+    std::unordered_map<char, size_t> m;
     size_t unique_chars = 1;
     std::string pattern;
     pattern.reserve(3 * word.size());
@@ -86,10 +72,10 @@ std::string pattern(const std::string & word) {
     ------------
 
 */
-std::map<std::string, vs> patternify(const std::string& in) {
+std::unordered_map<std::string, vs> patternify(const std::string& in) {
     std::ifstream fin(in);
-    if (!fin) return std::map<std::string, vs>();
-    std::map<std::string, vs> patterns;
+    if (!fin) return std::unordered_map<std::string, vs>();
+    std::unordered_map<std::string, vs> patterns;
     for (std::string line; getline(fin, line);
         patterns[pattern(line)].push_back(line)) {}
     return patterns;
@@ -103,7 +89,7 @@ std::map<std::string, vs> patternify(const std::string& in) {
 */
 struct LogProbTable {
     size_t n, sum;
-    std::map<std::string, double> score_table;
+    std::unordered_map<std::string, double> score_table;
     double missing_penalty;
 
     explicit LogProbTable(size_t n) : n(n) { init();}
@@ -119,7 +105,7 @@ struct LogProbTable {
         std::ifstream fin(in);
         if (!fin) return false;
         else {
-            std::map<std::string, size_t> tally;
+            std::unordered_map<std::string, size_t> tally;
             std::string ngram;
             while (getline(fin, ngram, ' ')) {
                 std::string count;
@@ -189,11 +175,13 @@ std::string generate_key() {
     // initialize a uniform distribution between 0 and 1
     std::uniform_real_distribution<double> unif(0, 1);
 
-    for (size_t i = 0; i < key.size()-1; i++) {
-        if (unif(rng) >= 0.5) {
-            char tmp = key[i];
-            key[i] = key[i+1];
-            key[i+1] = tmp;
+    for (size_t i = 0; i < key.size(); i++) {
+        for (size_t j = 0; j < key.size(); j++) {
+            if (unif(rng) >= 0.5) {
+                char tmp = key[i];
+                key[i] = key[j];
+                key[j] = tmp;
+            }
         }
     }
     return key;
@@ -202,12 +190,13 @@ std::string generate_key() {
 /*
     Encrypt file with a randomly generated key
 */
-bool random_encrypt(const std::string & in) {
+bool random_encrypt(const std::string & in, bool silent) {
     std::ifstream fin(in);
-    std::ofstream fout("_" + in);
     if (!fin) return false;
     else {
+        std::ofstream fout("_" + in);
         std::string line, key = generate_key();
+        if (!silent) std::cout << in << ": " << key << std::endl;
         while (getline(fin, line)) {
             fout << apply_key_preserving(line, key) << std::endl;
         }
@@ -218,11 +207,11 @@ bool random_encrypt(const std::string & in) {
 /*
     Decrypts file with a given key
 */
-bool decrypt(const std::string & in, const std::string & key) {
+bool decrypt_file(const std::string & in, const std::string & key) {
     std::ifstream fin(in);
-    std::ofstream fout(add_filename_suffix(in, "-decrypted"));
     if (!fin) return false;
     else {
+        std::ofstream fout(add_filename_suffix(in, "-decrypted"));
         std::string line;
         while (getline(fin, line)) {
             fout << apply_key_preserving(line, key) << std::endl;
@@ -242,13 +231,16 @@ vs get_words(const std::string & in) {
         words.emplace_back();
         std::string line;
         while (getline(fin, line)) {
+            if (words[words.size()-1].size()) words.emplace_back();
             for (char c : line) {
                 if (isUpper(c)) words[words.size()-1].push_back(c);
                 else if (isLower(c))
                     words[words.size()-1].push_back(toUpper(c));
-                else if (c == ' ') words.emplace_back();
+                else if (c == ' ' && words[words.size()-1].size())
+                    words.emplace_back();
             }
         }
+        if (!words[words.size()-1].size()) words.resize(words.size()-1);
     }
     return words;
 }
@@ -262,6 +254,26 @@ vs get_ngrams(const vs & words, size_t n) {
         for (size_t i = 0; i + n - 1 < word.size(); i++)
             ngrams.emplace_back(word, i, n);
     return ngrams;
+}
+
+/*
+    Generates next swap
+*/
+bool next_transposition(std::string & s, size_t & i, size_t & j) {
+    // undo previous swap
+    if (j != 0) std::swap(s[i], s[j]);
+    if (j == s.size() - 1) {
+        // move i
+        i++;
+        j = i + 1;
+    } else {
+        // or move j
+        j++;
+    }
+    if (j == s.size()) return false;
+    // next swap
+    std::swap(s[i], s[j]);
+    return true;
 }
 
 /*
@@ -287,13 +299,19 @@ std::string solve(const LogProbTable & table, const vs & ngrams) {
     std::string key = eng;
     double tmp = max;
     while (true) {
-        for (auto t : transpositions(key)) {
-            double fitness = score(table, apply_key(ngrams, t));
+        std::string tmp_transp = eng;
+        size_t i = 0, j = 0;
+        size_t count = 0;
+        while (next_transposition(tmp_transp, i, j)) {
+            double fitness = score(table, apply_key(ngrams, tmp_transp));
+            
             if (fitness > tmp) {
                 tmp = fitness;
-                key = t;
+                key = tmp_transp;
             }
         }
+        std::cout << tmp << std::endl;
+        std::cout << key << std::endl;
         if (tmp == max) break;
         max = tmp;
     }
@@ -305,7 +323,7 @@ std::string solve(const LogProbTable & table, const vs & ngrams) {
     If there is only one word in the dictionary with a certain pattern, 
     then we may assume to have solved the cipherword.
 */
-std::string cross_check(vs words, const std::map<std::string, vs> & patterns) {
+std::string cross_check(vs words, const std::unordered_map<std::string, vs> & patterns) {
     std::string key = eng;
     for (size_t j = 0; j < words.size(); j++) {
         std::string word = words[j];
@@ -325,58 +343,75 @@ std::string cross_check(vs words, const std::map<std::string, vs> & patterns) {
 }
 
 int main(int argc, char ** argv) {
-    if (argc < 2) fail_input();
-    vs args(argv + 1, argv + argc);
+    bool silent, encrypt, decrypt;
+    std::string tally = "default-tally.txt";
+    std::string dict = "default-dictionary.txt";
+
+    static struct option long_options[] = {
+        {"help",        no_argument,       NULL, 'h'},
+        {"silent",      no_argument,       NULL, 's'},
+        {"encrypt",     no_argument,       NULL, 'e'},
+        {"tally",       required_argument, NULL, 't'},
+        {"dictionary",  required_argument, NULL, 'd'},
+        {NULL,          0,                 NULL,   0}
+    };
+
+    char opt;
+    while ((opt = getopt_long(argc, argv, "hset:d:", long_options, NULL)) != -1) {
+        switch (opt) {
+            case '?':
+            case ':':
+            case 'h':
+                fail_input();
+                break;
+            case 's':
+                silent = true;
+                break;
+            case 'e':
+                encrypt = true;
+                break;
+            case 't':
+                decrypt = true;
+                tally = optarg;
+                break;
+            case 'd':
+                decrypt = true;
+                dict = optarg;
+                break;
+            default:
+                fail_input();
+                break;
+        }
+    }
+    if (encrypt && decrypt) fail_input();
+    vs files(argv + optind, argv + argc);
+    if (!files.size()) fail_input();
 
     /*
         encrypt
     */
-    if (args[0] == "--encrypt" || args[0] == "-e") {
-        vs files;
-        for (size_t i = 1; i < args.size(); i++)
-            files.push_back(args[i]);
-        if (!files.size()) fail_input();
-        for (std::string file : files)
-            random_encrypt(file);
+    if (encrypt) {
+        if (!silent) std::cout << "encrypting..." << std::endl;
+        for (std::string file : files) {
+            if (!random_encrypt(file, silent) && !silent)
+                std::cout << "failed to read " << file << std::endl;
+        }
         exit(0);
     }
 
     /*
         or decrypt
     */
-    bool silent = false;
-    std::string tally = "default-tally.txt";
-    std::string dict = "default-dictionary.txt";
-    vs files;
-
-    // parse args
-    for (size_t i = 0; i < args.size(); i++) {
-        if (args[i] == "-s" || args[i] == "--silent") {
-            silent = true;
-        } else if (args[i] == "-t" || args[i] == "--tally") {
-            if (++i < args.size()) tally = args[i];
-            else fail_input();
-        } else if (args[i] == "-d" || args[i] == "--dict"
-         || args[i] == "--dictionary") {
-            if (++i < args.size()) dict = args[i];
-            else fail_input();
-        } else {
-            files.push_back(args[i]);
-        }
-    }
-
-    if (!files.size()) fail_input();
-
     LogProbTable table(4);
     if (!table.loadTableFile(tally)) die("failed to read " + tally);
     if (table.sum < 10000) die("please input larger tally");
 
-    std::map<std::string, vs> patterns = patternify(dict);
+    std::unordered_map<std::string, vs> patterns = patternify(dict);
     if (!patterns.size()) die("failed to read " + dict);
 
+    if (!silent) std::cout << "decrypting..." << std::endl;
     for (std::string file : files) {
         std::stringstream ss;
-        ss << file << ":" << std::endl;
         vs words = get_words(file);
         if (!words.size()) {
             std::cout << "failed to read " << file << std::endl;
@@ -385,7 +420,7 @@ int main(int argc, char ** argv) {
         std::string key1 = cross_check(words, patterns);
         vs improved_words = apply_key(words, key1);
         if (key1 == eng) {
-            ss << "dictionary found no matches" << std::endl;
+            ss << "dictionary found no pattern matches" << std::endl;
         }
 
         vs ngrams = get_ngrams(improved_words, 4);
@@ -396,8 +431,8 @@ int main(int argc, char ** argv) {
         }
 
         std::string final_key = apply_key(key1, key2);
-        ss << "final key: " << final_key << std::endl;
-        decrypt(file, final_key);
+        ss << file << ": " << final_key << std::endl;
+        decrypt_file(file, final_key);
         if (!silent) std::cout << ss.str();
     }
     return 0;
