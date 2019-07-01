@@ -296,26 +296,22 @@ double score(const LogProbTable & table, const vs & ngrams) {
 */
 std::string solve(const LogProbTable & table, const vs & ngrams) {
     double max = score(table, ngrams);
-    std::string key = eng;
+    std::string max_key = eng;
     double tmp = max;
     while (true) {
-        std::string tmp_transp = eng;
+        std::string tmp_transp = max_key;
         size_t i = 0, j = 0;
-        size_t count = 0;
         while (next_transposition(tmp_transp, i, j)) {
             double fitness = score(table, apply_key(ngrams, tmp_transp));
-            
             if (fitness > tmp) {
                 tmp = fitness;
-                key = tmp_transp;
+                max_key = tmp_transp;
             }
         }
-        std::cout << tmp << std::endl;
-        std::cout << key << std::endl;
         if (tmp == max) break;
         max = tmp;
     }
-    return key;
+    return max_key;
 }
 
 /*
@@ -426,7 +422,7 @@ int main(int argc, char ** argv) {
         vs ngrams = get_ngrams(improved_words, 4);
         std::string key2 = solve(table, ngrams);
         if (key2 == eng) {
-            ss << "hill climbing algorithm did nothing (or was not even needed)"
+            ss << "hill climbing algorithm did nothing"
                << std::endl;
         }
 
