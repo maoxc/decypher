@@ -21,9 +21,10 @@ A hill-climbing algorithm is used to improve the fitness exhaustively: in each s
 
 ## Usage:
 `1)`  
-Use random keys to encrypt file(s):  
-`decypher -e|--encrypt file ...`  
+Use a randomly generated key to encrypt file(s):  
+`decypher -e|--encrypt [-s|--silent] file ...`  
 &nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;outputted file(s) are prefixed by `_`  
+&nbsp;&nbsp;&nbsp;&nbsp;-&nbsp;key is printed to standard output unless silent flag is supplied
 
 `2)`  
 Decrypt file(s) using optional tally/dictionary files and silent flag:  
