@@ -18,14 +18,14 @@ char toUpper(const char &c) { return c - 'a' + 'A';}
 
 void die(std::string && msg) {
     std::cout << msg << std::endl;
-    exit(0);
+    exit(1);
 }
 
-void fail_input() {
+void fail_input(const bool & sig) {
     std::cout << "decypher --encrypt file..." << std::endl
               << "decypher [-t tally] [-d dictionary] [--silent] file..."
               << std::endl;
-    exit(0);
+    exit(sig);
 }
 
 /*
@@ -358,7 +358,7 @@ int main(int argc, char ** argv) {
             case '?':
             case ':':
             case 'h':
-                fail_input();
+                fail_input(0);
                 break;
             case 's':
                 silent = true;
@@ -375,13 +375,13 @@ int main(int argc, char ** argv) {
                 dict = optarg;
                 break;
             default:
-                fail_input();
+                fail_input(1);
                 break;
         }
     }
-    if (encrypt && decrypt) fail_input();
+    if (encrypt && decrypt) fail_input(1);
     vs files(argv + optind, argv + argc);
-    if (!files.size()) fail_input();
+    if (!files.size()) fail_input(1);
 
     /*
         encrypt
@@ -389,8 +389,10 @@ int main(int argc, char ** argv) {
     if (encrypt) {
         if (!silent) std::cout << "encrypting..." << std::endl;
         for (std::string file : files) {
-            if (!random_encrypt(file, silent) && !silent)
-                std::cout << "failed to read " << file << std::endl;
+            if (!random_encrypt(file, silent)) {
+                if (!silent) die("failed to read " + file);
+                exit(1);
+            }
         }
         exit(0);
     }
@@ -410,8 +412,7 @@ int main(int argc, char ** argv) {
         std::stringstream ss;
         vs words = get_words(file);
         if (!words.size()) {
-            std::cout << "failed to read " << file << std::endl;
-            continue;
+            die("failed to read " + file);
         }
         std::string key1 = cross_check(words, patterns);
         vs improved_words = apply_key(words, key1);
