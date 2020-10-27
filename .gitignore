@@ -1,3 +1,11 @@
 decypher
 _*
 *-decrypted*
+*.o
+*.exe
+.idea
+.vscode
+cmake-build-debug
+CMakeLists.txt
+build
+catch2
